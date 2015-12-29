@@ -94,10 +94,12 @@ MyApplet.prototype = {
             Main.indicatorManager.disconnect(this.signalRemoved);
             this.signalRemoved = 0;
         }
-        this._shellIndicators.forEach(function(iconActor) {
+	for (let i in this._shellIndicators)
+	{
+            let iconActor = this._shellIndicators[i];
+            delete this._shellIndicators[i];
             iconActor.destroy();
-        });
-        this._shellIndicators = {};
+	}
     },
 
     _onIndicatorAdded: function(manager, appIndicator) {
