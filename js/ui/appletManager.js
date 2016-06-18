@@ -519,28 +519,38 @@ function clearAppletConfiguration(panelId) {
 
 function pasteAppletConfiguration(panelId) {
     clearAppletConfiguration(panelId);
+    let raw = global.settings.get_strv("enabled-applets");
 
     let skipped = false;
 
-    let raw = global.settings.get_strv("enabled-applets");
-    let nextId = global.settings.get_int("next-applet-id");
+    let len = clipboard.length;
 
-    clipboard.forEach(function(x) {
-        let uuid = x.uuid
-        let max = Extension.get_max_instances(uuid, Extension.Type.APPLET);
-        if (max == -1 || raw.filter(a => a.split(":")[2] == uuid).length < max) {
-            raw.push("panel" + panelId + ":" + x.location_label + ":" + x.order + ":" + uuid + ":" + nextId);
-            nextId ++;
+    let nextId = global.settings.get_int("next-applet-id");
+    for (let i = 0; i < len; i++) {
+        let max = Extension.get_max_instances(clipboard[i].uuid, Extension.Type.APPLET);
+        if (max == -1) {
+            raw.push("panel" + panelId + ":" + clipboard[i].location_label + ":" + clipboard[i].order + ":" + clipboard[i].uuid + ":" + nextId);
+            nextId++;
         } else {
-            skipped = true;
+            let curr = enabledAppletDefinitions.uuidMap[clipboard[i].uuid];
+            if (curr) {
+                let count = curr.length;
+                if (count < max) {
+                    raw.push("panel" + panelId + ":" + clipboard[i].location_label + ":" + clipboard[i].order + ":" + clipboard[i].uuid + ":" + nextId);
+                    nextId++;
+                }
+                else {
+                    skipped = true;
+                }
+            }
         }
-    });
+    }
 
     global.settings.set_int("next-applet-id", nextId);
     global.settings.set_strv("enabled-applets", raw);
 
     if (skipped) {
-        let dialog = new ModalDialog.NotifyDialog(_("Certain applets do not allow multiple instances and were not copied") + "\n\n");
+        let dialog = new ModalDialog.NotifyDialog(_("Certain applets do not allow multiple instances or were at their max number of instances so were not copied") + "\n\n");
         dialog.open();
     }
 }
